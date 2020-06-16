@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns:android="http://schemas.android.com/apk/res/android" xmlns="http://apache.org/cordova/ns/plugins/1.0" id="ablota-store-cordova-plugin" version="1.0.0-beta.1">
+	<engines>
+		<engine name="cordova" version=">=9.0.0"/>
+		<engine name="cordova-android" version=">=8.0.0"/>
+	</engines>
+	<name>Ablota Store Cordova Plugin</name>
+	<description>Cordova Plugin is an extension for the Ablota Store and offers several native implementations.</description>
+	<author>Ablota (StarApps GmbH)</author>
+	<keywords>ablota,store,cordova,plugin</keywords>
+	<license>EUPL-1.2</license>
+	<js-module src="www/device.js" name="AblotaStoreDevice">
+		<clobbers target="ablota.store.device"/>
+	</js-module>
+	<js-module src="www/package.js" name="AblotaStorePackage">
+		<clobbers target="ablota.store.package"/>
+	</js-module>
+	<js-module src="www/file.js" name="AblotaStoreFile">
+		<clobbers target="ablota.store.file"/>
+	</js-module>
+	<platform name="android">
+		<source-file src="src/android/DevicePlugin.java" target-dir="src/com/ablota/store/plugin"/>
+		<source-file src="src/android/PackagePlugin.java" target-dir="src/com/ablota/store/plugin"/>
+		<source-file src="src/android/FilePlugin.java" target-dir="src/com/ablota/store/plugin"/>
+
+		<source-file src="src/android/Helpers.java" target-dir="src/com/ablota/store/plugin"/>
+		<source-file src="src/android/OpenGLActivity.java" target-dir="src/com/ablota/store/plugin"/>
+		<source-file src="src/android/HandleDeviceAdminReceiver.java" target-dir="src/com/ablota/store/plugin"/>
+		<source-file src="src/android/RedirectBroadcastReceiver.java" target-dir="src/com/ablota/store/plugin"/>
+
+		<resource-file src="src/android/res/xml/device_admin.xml" target="res/xml/device_admin.xml"/>
+
+		<config-file parent="/*" target="res/xml/config.xml">
+			<feature name="AblotaStoreDevice">
+				<param name="android-package" value="com.ablota.store.plugin.DevicePlugin"/>
+				<param name="onload" value="true"/>
+			</feature>
+			<feature name="AblotaStorePackage">
+				<param name="android-package" value="com.ablota.store.plugin.PackagePlugin"/>
+				<param name="onload" value="true"/>
+			</feature>
+			<feature name="AblotaStoreFile">
+				<param name="android-package" value="com.ablota.store.plugin.FilePlugin"/>
+				<param name="onload" value="true"/>
+			</feature>
+		</config-file>
+		<config-file parent="/manifest" target="AndroidManifest.xml">
+			<uses-permission android:name="android.permission.INTERNET"/>
+			<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+			<uses-permission android:name="android.permission.WAKE_LOCK"/>
+			<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+			<uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>
+
+			<uses-feature android:glEsVersion="0x00020000" android:required="true"/>
+		</config-file>
+		<config-file parent="/manifest/application" target="AndroidManifest.xml">
+			<activity android:name="com.ablota.store.plugin.OpenGLActivity"/>
+
+			<receiver android:name="com.ablota.store.plugin.RedirectBroadcastReceiver"/>
+			<receiver android:name="com.ablota.store.plugin.HandleDeviceAdminReceiver" android:permission="android.permission.BIND_DEVICE_ADMIN">
+				<meta-data android:name="android.app.device_admin" android:resource="@xml/device_admin"/>
+				<intent-filter>
+					<action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/>
+					<action android:name="android.app.action.DEVICE_ADMIN_DISABLED"/>
+				</intent-filter>
+			</receiver>
+		</config-file>
+	</platform>
+</plugin>
