@@ -23,9 +23,6 @@
 		"cordova": ">=10.0.0",
 		"cordova-android": ">=9.0.0"
 	},
-	"publishConfig": {
-		"@ablota:registry": "https://gitlab.starapps-network.com/api/v4/projects/34/packages/npm/"
-	},
 	"cordova": {
 		"id": "ablota-store-cordova-plugin",
 		"platforms": [
