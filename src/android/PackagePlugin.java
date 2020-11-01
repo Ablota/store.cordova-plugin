@@ -130,7 +130,7 @@ public class PackagePlugin extends CordovaPlugin {
 		JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
 		data.put("packages", packages);
 
-		callbackContext.success(packages);
+		callbackContext.success(data);
 	}
 
 	@SuppressLint("PackageManagerGetSignatures")

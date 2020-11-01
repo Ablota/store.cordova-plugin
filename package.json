@@ -1,6 +1,6 @@
 {
 	"name": "@ablota/store-cordova-plugin",
-	"version": "1.0.0-beta.1",
+	"version": "1.0.0",
 	"description": "Cordova Plugin is an extension for the Ablota Store and offers several native implementations.",
 	"keywords": [
 		"ablota",
@@ -20,8 +20,8 @@
 		"url": "https://gitlab.starapps-network.com/ablota/store/cordova-plugin.git"
 	},
 	"engines": {
-		"cordova": ">=9.0.0",
-		"cordova-android": ">=8.0.0"
+		"cordova": ">=10.0.0",
+		"cordova-android": ">=9.0.0"
 	},
 	"publishConfig": {
 		"@ablota:registry": "https://gitlab.starapps-network.com/api/v4/projects/34/packages/npm/"

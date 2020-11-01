@@ -29,4 +29,10 @@ module.exports = {
 	jarInfo: function(jar, successCallback, errorCallback) {
 		exec(successCallback, errorCallback, 'AblotaStoreFile', 'jarInfo', [jar]);
 	},
+	hash: function(file, successCallback, errorCallback) {
+		exec(successCallback, errorCallback, 'AblotaStoreFile', 'hash', [file]);
+	},
+	hashName: function(name, successCallback, errorCallback) {
+		exec(successCallback, errorCallback, 'AblotaStoreFile', 'hashName', [name]);
+	},
 };

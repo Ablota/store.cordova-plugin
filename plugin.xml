@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin xmlns:android="http://schemas.android.com/apk/res/android" xmlns="http://apache.org/cordova/ns/plugins/1.0" id="ablota-store-cordova-plugin" version="1.0.0-beta.1">
+<plugin xmlns:android="http://schemas.android.com/apk/res/android" xmlns="http://apache.org/cordova/ns/plugins/1.0" id="ablota-store-cordova-plugin" version="1.0.0">
 	<engines>
-		<engine name="cordova" version=">=9.0.0"/>
-		<engine name="cordova-android" version=">=8.0.0"/>
+		<engine name="cordova" version=">=10.0.0"/>
+		<engine name="cordova-android" version=">=9.0.0"/>
 	</engines>
 	<name>Ablota Store Cordova Plugin</name>
 	<description>Cordova Plugin is an extension for the Ablota Store and offers several native implementations.</description>
@@ -18,10 +18,14 @@
 	<js-module src="www/file.js" name="AblotaStoreFile">
 		<clobbers target="ablota.store.file"/>
 	</js-module>
+	<js-module src="www/link.js" name="AblotaStoreLink">
+		<clobbers target="ablota.store.link"/>
+	</js-module>
 	<platform name="android">
 		<source-file src="src/android/DevicePlugin.java" target-dir="src/com/ablota/store/plugin"/>
 		<source-file src="src/android/PackagePlugin.java" target-dir="src/com/ablota/store/plugin"/>
 		<source-file src="src/android/FilePlugin.java" target-dir="src/com/ablota/store/plugin"/>
+		<source-file src="src/android/LinkPlugin.java" target-dir="src/com/ablota/store/plugin"/>
 
 		<source-file src="src/android/Helpers.java" target-dir="src/com/ablota/store/plugin"/>
 		<source-file src="src/android/OpenGLActivity.java" target-dir="src/com/ablota/store/plugin"/>
@@ -41,6 +45,10 @@
 			</feature>
 			<feature name="AblotaStoreFile">
 				<param name="android-package" value="com.ablota.store.plugin.FilePlugin"/>
+				<param name="onload" value="true"/>
+			</feature>
+			<feature name="AblotaStoreLink">
+				<param name="android-package" value="com.ablota.store.plugin.LinkPlugin"/>
 				<param name="onload" value="true"/>
 			</feature>
 		</config-file>
@@ -64,6 +72,62 @@
 					<action android:name="android.app.action.DEVICE_ADMIN_DISABLED"/>
 				</intent-filter>
 			</receiver>
+		</config-file>
+		<config-file parent="/manifest/application/activity" target="AndroidManifest.xml">
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
+				<category android:name="android.intent.category.BROWSABLE"/>
+				<data android:scheme="ablota-store"/>
+			</intent-filter>
+			<intent-filter android:autoVerify="true">
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
+				<category android:name="android.intent.category.BROWSABLE"/>
+				<data android:scheme="http"/>
+				<data android:scheme="https"/>
+				<data android:host="store.ablota.com"/>
+			</intent-filter>
+			<intent-filter android:autoVerify="false">
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
+				<category android:name="android.intent.category.BROWSABLE"/>
+				<data android:scheme="http"/>
+				<data android:scheme="https"/>
+				<data android:host="*"/>
+				<data android:pathPrefix="/fdroid/repo"/>
+				<data android:pathPattern="/fdroid/repo/*"/>
+				<data android:pathPattern="/.*/fdroid/repo"/>
+				<data android:pathPattern="/.*/fdroid/repo/*"/>
+				<data android:pathPattern="/.*/.*/fdroid/repo"/>
+				<data android:pathPattern="/.*/.*/fdroid/repo/*"/>
+				<data android:pathPattern="/.*/.*/.*/fdroid/repo"/>
+				<data android:pathPattern="/.*/.*/.*/fdroid/repo/*"/>
+				<data android:pathPattern="/.*/.*/.*/.*/fdroid/repo"/>
+				<data android:pathPattern="/.*/.*/.*/.*/fdroid/repo/*"/>
+				<data android:pathPrefix="/fdroid/archive"/>
+				<data android:pathPattern="/fdroid/archive/*"/>
+				<data android:pathPattern="/.*/fdroid/archive"/>
+				<data android:pathPattern="/.*/fdroid/archive/*"/>
+				<data android:pathPattern="/.*/.*/fdroid/archive"/>
+				<data android:pathPattern="/.*/.*/fdroid/archive/*"/>
+				<data android:pathPattern="/.*/.*/.*/fdroid/archive"/>
+				<data android:pathPattern="/.*/.*/.*/fdroid/archive/*"/>
+				<data android:pathPattern="/.*/.*/.*/.*/fdroid/archive"/>
+				<data android:pathPattern="/.*/.*/.*/.*/fdroid/archive/*"/>
+			</intent-filter>
+			<intent-filter android:autoVerify="false">
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
+				<category android:name="android.intent.category.BROWSABLE"/>
+				<data android:scheme="http"/>
+				<data android:scheme="https"/>
+				<data android:host="f-droid.org"/>
+				<data android:host="www.f-droid.org"/>
+				<data android:pathPrefix="/packages/"/>
+				<data android:pathPattern="/.*/packages/.*"/>
+				<data android:pathPattern="/.*/packages/.*/"/>
+			</intent-filter>
 		</config-file>
 	</platform>
 </plugin>

@@ -81,6 +81,7 @@ public class DevicePlugin extends CordovaPlugin {
 		JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
 		data.put("active", devicePolicyManager.isAdminActive(deviceAdminReceiver));
 		data.put("profileOwner", devicePolicyManager.isProfileOwnerApp(this.cordova.getActivity().getApplicationContext().getPackageName()));
+		data.put("deviceOwner", devicePolicyManager.isDeviceOwnerApp(this.cordova.getActivity().getApplicationContext().getPackageName()));
 
 		callbackContext.success(data);
 	}

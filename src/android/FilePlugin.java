@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.CodeSigner;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -53,6 +54,8 @@ public class FilePlugin extends CordovaPlugin {
 					this.jarInfo(args.getString(0), callbackContext);
 				} else if("hash".equals(action)) {
 					this.hash(args.getString(0), callbackContext);
+				} else if("hashName".equals(action)) {
+					this.hashName(args.getString(0), callbackContext);
 				}
 			} catch(JSONException e) {
 				callbackContext.error(e.getMessage());
@@ -88,7 +91,7 @@ public class FilePlugin extends CordovaPlugin {
 
 				long requestId = downloadManager.enqueue(request);
 				boolean downloading = true;
-				int progress = 0;
+				int progress = -1;
 				int status = 0;
 
 				while(downloading) {
@@ -166,7 +169,7 @@ public class FilePlugin extends CordovaPlugin {
 					File destination = new File(new URI(Uri.parse(file).toString()));
 					int bytesCurrent = 0;
 					int bytesTotal = httpConnection.getContentLength();
-					int progress = 0;
+					int progress = -1;
 
 					try(BufferedInputStream in = new BufferedInputStream(httpConnection.getInputStream()); FileOutputStream out = new FileOutputStream(destination)) {
 						int n;
@@ -232,7 +235,7 @@ public class FilePlugin extends CordovaPlugin {
 			try(ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile)))) {
 				ZipEntry zipEntry;
 				int n;
-				int progress = 0;
+				int progress = -1;
 				byte[] buffer = new byte[16384];
 
 				while((zipEntry = zipInputStream.getNextEntry()) != null) {
@@ -301,9 +304,9 @@ public class FilePlugin extends CordovaPlugin {
 					X509Certificate certificate = (X509Certificate) certs.get(0);
 					String fingerprint = Helpers.byte2Hex(Helpers.sha256(certificate.getEncoded()));
 
-					JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
+					JSONObject data = new JSONObject(indexContent.toString());
+					data.put(Helpers.STATUS, Helpers.STATUS_SUCCESS);
 					data.put("fingerprint", fingerprint);
-					data.put("index", new JSONObject(indexContent.toString()));
 
 					callbackContext.success(data);
 				} else {
@@ -321,20 +324,32 @@ public class FilePlugin extends CordovaPlugin {
 		try {
 			File content = new File(new URI(Uri.parse(file).toString()));
 
-			try(InputStream in = new FileInputStream(content); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+			try(InputStream in = new FileInputStream(content)) {
+				MessageDigest md = MessageDigest.getInstance("SHA-256");
 				byte[] buffer = new byte[16384];
 				int n;
 
 				while((n = in.read(buffer)) >= 0) {
-					out.write(buffer, 0, n);
+					md.update(buffer, 0, n);
 				}
 
 				JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
-				data.put("hash", Helpers.byte2Hex(Helpers.sha256(out.toByteArray())));
+				data.put("hash", Helpers.byte2Hex(md.digest()));
 
 				callbackContext.success(data);
 			}
 		} catch(URISyntaxException | IOException | NoSuchAlgorithmException e) {
+			callbackContext.error(e.getMessage());
+		}
+	}
+
+	private void hashName(String name, CallbackContext callbackContext) throws JSONException {
+		try {
+			JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
+			data.put("hash", Helpers.byte2Hex(Helpers.sha256(name.getBytes())));
+
+			callbackContext.success(data);
+		} catch(NoSuchAlgorithmException e) {
 			callbackContext.error(e.getMessage());
 		}
 	}
