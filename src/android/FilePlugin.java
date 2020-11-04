@@ -14,8 +14,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -99,54 +100,56 @@ public class FilePlugin extends CordovaPlugin {
 					query.setFilterById(requestId);
 
 					Cursor cursor = downloadManager.query(query);
-					cursor.moveToFirst();
+					if(cursor.moveToFirst()) {
+						int statusNew = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
 
-					int statusNew = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+						if(statusNew == DownloadManager.STATUS_SUCCESSFUL) {
+							downloading = false;
 
-					if(statusNew == DownloadManager.STATUS_SUCCESSFUL) {
-						downloading = false;
+							JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
+							data.put("localUri", cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)));
+							data.put("contentUri", downloadManager.getUriForDownloadedFile(requestId).toString());
 
-						JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
-						data.put("localUri", cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)));
-						data.put("contentUri", downloadManager.getUriForDownloadedFile(requestId).toString());
+							callbackContext.success(data);
+						} else if(statusNew == DownloadManager.STATUS_RUNNING) {
+							int bytesCurrent = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+							int bytesTotal = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
 
-						callbackContext.success(data);
-					} else if(statusNew == DownloadManager.STATUS_RUNNING) {
-						int bytesCurrent = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-						int bytesTotal = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+							if(bytesCurrent > 0 && bytesTotal > 0) {
+								int progressNew = (int) ((bytesCurrent * 100L) / bytesTotal);
 
-						if(bytesCurrent > 0 && bytesTotal > 0) {
-							int progressNew = (int) ((bytesCurrent * 100L) / bytesTotal);
+								if(progress != progressNew) {
+									progress = progressNew;
 
-							if(progress != progressNew) {
-								progress = progressNew;
+									JSONObject data = Helpers.callbackData(Helpers.STATUS_UPDATE);
+									data.put("progress", progress);
+									data.put("bytesCurrent", bytesCurrent);
+									data.put("bytesTotal", bytesTotal);
 
-								JSONObject data = Helpers.callbackData(Helpers.STATUS_UPDATE);
-								data.put("progress", progress);
-								data.put("bytesCurrent", bytesCurrent);
-								data.put("bytesTotal", bytesTotal);
+									PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, data);
+									pluginResult.setKeepCallback(true);
 
-								PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, data);
-								pluginResult.setKeepCallback(true);
-
-								callbackContext.sendPluginResult(pluginResult);
+									callbackContext.sendPluginResult(pluginResult);
+								}
 							}
+						} else if(statusNew == DownloadManager.STATUS_PAUSED && status != statusNew) {
+							int code = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
+
+							PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, Helpers.callbackData(Helpers.STATUS_UPDATE, code, null));
+							pluginResult.setKeepCallback(true);
+
+							callbackContext.sendPluginResult(pluginResult);
+						} else if(statusNew == DownloadManager.STATUS_FAILED) {
+							downloading = false;
+							int code = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
+
+							callbackContext.success(Helpers.callbackData(Helpers.STATUS_FAILURE, code, null));
 						}
-					} else if(statusNew == DownloadManager.STATUS_PAUSED && status != statusNew) {
-						int code = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
 
-						PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, Helpers.callbackData(Helpers.STATUS_UPDATE, code, null));
-						pluginResult.setKeepCallback(true);
-
-						callbackContext.sendPluginResult(pluginResult);
-					} else if(statusNew == DownloadManager.STATUS_FAILED) {
-						downloading = false;
-						int code = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
-
-						callbackContext.success(Helpers.callbackData(Helpers.STATUS_FAILURE, code, null));
+						status = statusNew;
 					}
 
-					status = statusNew;
+					cursor.close();
 				}
 			} else {
 				URL connectionUrl = new URL(url);
@@ -171,7 +174,7 @@ public class FilePlugin extends CordovaPlugin {
 					int bytesTotal = httpConnection.getContentLength();
 					int progress = -1;
 
-					try(BufferedInputStream in = new BufferedInputStream(httpConnection.getInputStream()); FileOutputStream out = new FileOutputStream(destination)) {
+					try(InputStream in = new BufferedInputStream(httpConnection.getInputStream()); OutputStream out = new BufferedOutputStream(new FileOutputStream(destination))) {
 						int n;
 						byte[] buffer = new byte[16384];
 
@@ -245,7 +248,7 @@ public class FilePlugin extends CordovaPlugin {
 					if(!dir.isDirectory() && !dir.mkdirs()) throw new FileNotFoundException("Failed to ensure directory: " + dir.getAbsolutePath());
 					if(zipEntry.isDirectory()) continue;
 
-					try(FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+					try(OutputStream fileOutputStream = new BufferedOutputStream(new FileOutputStream(file))) {
 						while((n = zipInputStream.read(buffer)) >= 0) {
 							bytesCurrent += n;
 
@@ -287,7 +290,7 @@ public class FilePlugin extends CordovaPlugin {
 			JarEntry indexEntry = (JarEntry) jarFile.getEntry("index-v1.json");
 
 			StringBuilder indexContent = new StringBuilder();
-			try(InputStream indexInputStream = jarFile.getInputStream(indexEntry); BufferedReader reader = new BufferedReader(new InputStreamReader(indexInputStream))) {
+			try(InputStream indexInputStream = new BufferedInputStream(jarFile.getInputStream(indexEntry)); BufferedReader reader = new BufferedReader(new InputStreamReader(indexInputStream))) {
 				String line;
 
 				while((line = reader.readLine()) != null) {
@@ -324,7 +327,7 @@ public class FilePlugin extends CordovaPlugin {
 		try {
 			File content = new File(new URI(Uri.parse(file).toString()));
 
-			try(InputStream in = new FileInputStream(content)) {
+			try(InputStream in = new BufferedInputStream(new FileInputStream(content))) {
 				MessageDigest md = MessageDigest.getInstance("SHA-256");
 				byte[] buffer = new byte[16384];
 				int n;

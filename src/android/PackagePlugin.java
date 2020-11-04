@@ -24,7 +24,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
@@ -257,7 +258,7 @@ public class PackagePlugin extends CordovaPlugin {
 	private void addApkToInstallSession(String file, String hash, PackageInstaller.Session session) throws IOException, URISyntaxException, NoSuchAlgorithmException, RuntimeException {
 		File apk = new File(new URI(Uri.parse(file).toString()));
 
-		try(OutputStream out = session.openWrite(apk.getName(), 0, apk.length()); InputStream in = new FileInputStream(apk)) {
+		try(OutputStream out = session.openWrite(apk.getName(), 0, apk.length()); InputStream in = new BufferedInputStream(new FileInputStream(apk))) {
 			byte[] buffer = new byte[16384];
 			int n;
 
@@ -268,15 +269,16 @@ public class PackagePlugin extends CordovaPlugin {
 			session.fsync(out);
 		}
 
-		try(InputStream in = session.openRead(apk.getName()); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+		try(InputStream in = new BufferedInputStream(session.openRead(apk.getName()))) {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			byte[] buffer = new byte[16384];
 			int n;
 
 			while((n = in.read(buffer)) >= 0) {
-				out.write(buffer, 0, n);
+				md.update(buffer, 0, n);
 			}
 
-			if(!hash.toLowerCase().equals(Helpers.byte2Hex(Helpers.sha256(out.toByteArray())).toLowerCase())) {
+			if(!hash.toLowerCase().equals(Helpers.byte2Hex(md.digest()).toLowerCase())) {
 				throw new RuntimeException("Exception while validating package.");
 			}
 		}
