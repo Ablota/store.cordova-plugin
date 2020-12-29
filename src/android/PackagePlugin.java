@@ -10,6 +10,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
 import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
@@ -96,6 +97,8 @@ public class PackagePlugin extends CordovaPlugin {
 					this.uninstall(args.getString(0), callbackContext);
 				} else if("launch".equals(action)) {
 					this.launch(args.getString(0), callbackContext);
+				} else if("permissionsInfo".equals(action)) {
+					this.permissionsInfo(args.getJSONArray(0), callbackContext);
 				}
 			} catch(JSONException e) {
 				callbackContext.error(e.getMessage());
@@ -224,6 +227,33 @@ public class PackagePlugin extends CordovaPlugin {
 		}
 
 		callbackContext.success(Helpers.callbackData(Helpers.STATUS_SUCCESS));
+	}
+
+	private void permissionsInfo(JSONArray permissions, CallbackContext callbackContext) throws JSONException {
+		JSONObject permissionsInfo = new JSONObject();
+		PackageManager packageManager = this.cordova.getActivity().getApplicationContext().getPackageManager();
+
+		for(int i = 0; i < permissions.length(); i++) {
+			final String permission = permissions.getString(i);
+
+			try {
+				PermissionInfo permissionInfo = packageManager.getPermissionInfo(permission, PackageManager.GET_META_DATA);
+				String permissionLabel = permissionInfo.loadLabel(packageManager).toString();
+
+				if(permissionLabel.equals(permission)) {
+					permissionsInfo.put(permission, null);
+				} else {
+					permissionsInfo.put(permission, permissionLabel);
+				}
+			} catch(PackageManager.NameNotFoundException e) {
+				permissionsInfo.put(permission, null);
+			}
+		}
+
+		JSONObject data = Helpers.callbackData(Helpers.STATUS_SUCCESS);
+		data.put("permissions", permissionsInfo);
+
+		callbackContext.success(data);
 	}
 
 	private JSONObject getPackageDetails(PackageInfo packageInfo) throws JSONException, NoSuchAlgorithmException {

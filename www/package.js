@@ -30,4 +30,7 @@ module.exports = {
 	launch: function(packageName, successCallback, errorCallback) {
 		exec(successCallback, errorCallback, 'AblotaStorePackage', 'launch', [packageName]);
 	},
+	permissionsInfo: function(permissions, successCallback, errorCallback) {
+		exec(successCallback, errorCallback, 'AblotaStorePackage', 'permissionsInfo', [permissions]);
+	},
 };
